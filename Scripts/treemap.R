@@ -6,6 +6,8 @@
 library(treemapify)
 library(ggplot2)
 
+
+# esse plota junto
 ggplot(df_long, aes(
   area = abs(n),            # tamanho proporcional ao número de indivíduos
   fill = grupo,             # cor por grupo
@@ -24,8 +26,7 @@ ggplot(df_long, aes(
   theme_minimal()
 
 
-#  teste 2
-
+#  teste 2- deu certo!!!!
 
 library(treemapify)
 library(ggplot2)
@@ -43,13 +44,12 @@ palette_fam <- setNames(
   familias_unicas
 )
 
-
-
 # Separar os dados
 df_epi <- df_long %>% filter(grupo == "Epibiontes", abs(percentual) >= 1.5)
 df_base <- df_long %>% filter(grupo == "Basebiontes", abs(percentual) >= 1.5)
 
-# 2️⃣ Gerar os treemaps com fill = family e scale_fill_manual(values = palette_fam)
+# 2️⃣ Gera os treemaps com fill = family e scale_fill_manual(values = palette_fam)
+
 # Epibiontes
 g_epi <- ggplot(df_epi, aes(
   area = abs(n),
