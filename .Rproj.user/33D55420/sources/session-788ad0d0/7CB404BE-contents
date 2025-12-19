@@ -598,6 +598,7 @@ mat_epi_fam <-as.data.frame( tab_epi_fam %>%
   ))
 
 writexl::write_xlsx(mat_epi_fam, "Data/epibiontes-familiabase.xlsx")
+write.csv(mat_epi_fam, "Data/epibiontes-familiabase.csv")
 
 #procurando os valores de na 
 # - Está tudo tranquilo, sem nas
