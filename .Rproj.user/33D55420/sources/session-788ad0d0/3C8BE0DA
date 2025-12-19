@@ -1,0 +1,26 @@
+{
+    "id": "3C8BE0DA",
+    "path": "E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises/Scripts/Scater-plot-bea.R",
+    "project_path": "Scripts/Scater-plot-bea.R",
+    "type": "r_source",
+    "hash": "541655625",
+    "contents": "",
+    "dirty": false,
+    "created": 1766060525416.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "223,0",
+        "scrollLine": "196"
+    },
+    "folds": "36|19|54|0|\n55|48|76|0|\n",
+    "lastKnownWriteTime": 1759488799,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1766147291827,
+    "read_only": false,
+    "read_only_alternatives": []
+}

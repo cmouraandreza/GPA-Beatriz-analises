@@ -22,7 +22,6 @@ library(raster)
 library(reshape2)
 library(extrafont)
 library(treemapify)
-library(ggplot2)
 library(patchwork)
 library(RColorBrewer)
 
@@ -72,7 +71,7 @@ df_long <- df_long %>%
   ) %>%
   ungroup()
 
-## 🎨 agora vamos plotar o treemap 
+## 🎨 agora vamos plotar o treemap ----
 
 #install.packages("treemapify")
 library(treemapify)
@@ -133,13 +132,14 @@ plots_tree
 
 
 # ✔️SALVANDO✔️
-ggsave("Plots/treemap_sppunica-contagem.png",
-       plot = plots_tree, width = 14, height = 8, dpi = 600, units = "in")
+#ggsave("Plots/treemap_sppunica-contagem.png",
+ #      plot = plots_tree, width = 14, height = 8, dpi = 600, units = "in")
 ####
 
 ### GÊNEROS ----
 colnames(df1)
-] "BS_Genera"   
+
+
 gen_epi_spp <- df1 %>%
   distinct(EP_Genera, Scientific_name_EP) %>%  # remove duplicatas de espécie dentro da família
   count(EP_Genera, name = "n_epi") %>%    # conta quantas espécies únicas por família
@@ -184,7 +184,7 @@ df_long <- df_long %>%
   ) %>%
   ungroup()
 
-## 🎨 agora vamos plotar o treemap 
+## 🎨 agora vamos plotar o treemap ----
 
 #install.packages("treemapify")
 library(treemapify)
@@ -245,8 +245,10 @@ plots_tree
 
 
 # ✔️SALVANDO✔️
-ggsave("Plots/treemap_generos-contagem.png",
-       plot = plots_tree, width = 14, height = 8, dpi = 600, units = "in")
+#ggsave("Plots/treemap_generos-contagem.png",
+ #      plot = plots_tree, width = 14, height = 8, dpi = 600, units = "in")
+
+
 ### ESPÉCIES ----
 
 colnames(df1)
@@ -264,8 +266,7 @@ base_spp_count <- df1 %>%
 
 #
 
-# --- 1) Padroniza nomes e junta (união de spp) ---✔️
-
+# --- 1) Padroniza nomes e junta (união de spp) ---✔️----
 
 df <- full_join(epi_spp_count, base_spp_count, by = "Species") %>%
   mutate(across(c(n_epi, n_base), ~replace_na(.x, 0)))
@@ -279,13 +280,17 @@ df_cont <- df %>%
     total_abs = sum(abs(n), na.rm = TRUE),
     percentual = 100 * n / total_abs
   ) %>%
-  ungroup()
+  ungroup()# esse nao ta funcionando
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # cria uma cópia com percentual absoluto
 df_long_excel <- df_long %>%
   mutate(percentual = abs(percentual))  # deixa todos os percentuais positivos
 
-writexl::write_xlsx(df_long_excel, "especies_contagem.xlsx")
+#salvando algum bagulho
+#writexl::write_xlsx(df_long_excel, "especies_contagem.xlsx")
+
+
 # (opcional) ordenar por total absoluto
 df <- df %>%
   mutate(total = n_epi + n_base,
@@ -310,7 +315,7 @@ df_long <- df_long %>%
 
 
 
-## 🎨 agora vamos plotar o treemap 
+## 🎨 agora vamos plotar o treemap ----
 
 #install.packages("treemapify")
 library(treemapify)
@@ -371,9 +376,8 @@ plots_tree<- g_epi + g_base + plot_layout(ncol = 2)
 plots_tree
 
 # ✔️SALVANDO✔️
-ggsave("Plots/treemap_spp-contagem.png",
-       plot = plots_tree, width = 14, height = 8, dpi = 600, units = "in")
-
+#ggsave("Plots/treemap_spp-contagem.png",
+#       plot = plots_tree, width = 14, height = 8, dpi = 600, units = "in")
 
 
 
@@ -509,7 +513,7 @@ browseURL("Plots/grafico_piramide_spp_interativo.html")
 
 
 
-#1) Contar epibiontes por família de basibionte (Top N por família)
+#1) Contagem epibiontes por família de basibionte (Top N por família)----
 library(dplyr)
 
 epi_por_familia_pct <- df1 %>%
@@ -529,7 +533,7 @@ epi_por_familia_pct <- df1 %>%
 #3) Exportar pra Excel
 library(writexl)
 
-write_xlsx(
+#write_xlsx(
   list(
     "Top_epibiontes_por_familia" = epi_por_familia,
     "Epibiontes_por_familia_pct" = epi_por_familia_pct,
@@ -542,21 +546,7 @@ write_xlsx(
 #4) (Opcional) Gráfico rápido (top epibiontes por família)
 library(ggplot2)
 
-epi_por_familia %>%
-  ggplot(aes(x = n_ocorrencias, y = reorder(epibionte_species, n_ocorrencias))) +
-  geom_col() +
-  facet_wrap(~ basibionte_family, scales = "free_y") +
-  labs(x = "Nº de ocorrências", y = "Espécie epibionte") +
-  theme_minimal() +
-  theme(axis.text.y = element_text(face = "italic"))
 
-# autoepibiose -----
-auto_sp <- df1 %>%
-  filter(!is.na(Scientific_name_EP),
-         !is.na(Scientific_name_BS)) %>%
-  filter(Scientific_name_EP == Scientific_name_BS)
-
-auto_sp
 
 # em genero
 dfgen <- df1 %>%
@@ -570,7 +560,9 @@ auto_genus <- dfgen %>%
   filter(EP_genus == BS_genus,
          Scientific_name_EP != Scientific_name_BS)
 
-genus<-dplyr::select(auto_genus, "ID", "EP_genus","BS_genus","Scientific_name_EP","Scientific_name_BS")
+genus<-dplyr::select(auto_genus,
+                     "ID", "EP_genus","BS_genus","Scientific_name_EP",
+                     "Scientific_name_BS")
 
 
 # em familia
@@ -579,19 +571,12 @@ auto_family <- df1 %>%
   filter(EP_family == BS_Family)
 colnames(auto_family)
 auto_family
-family<-dplyr::select(auto_family, "ID", "EP_family","BS_Family","Scientific_name_EP","Scientific_name_BS")
+
+family<-dplyr::select(auto_family,
+                      "ID", "EP_family","BS_Family",
+                      "Scientific_name_EP","Scientific_name_BS")
 
 # aquela pergunta desgraçada de espécies por  família de basibionte ----
-
-epi_por_familia %>%
-  ggplot(aes(x = n_ocorrencias, y = reorder(epibionte_species, n_ocorrencias))) +
-  geom_col() +
-  facet_wrap(~ basibionte_family, scales = "free_y") +
-  labs(x = "Nº de ocorrências", y = "Espécie epibionte") +
-  theme_minimal() +
-  theme(axis.text.y = element_text(face = "italic"))
-
-
 
 
 
@@ -605,14 +590,25 @@ tab_epi_fam <- df1 %>%
   count(Scientific_name_EP, BS_Family, name = "n") 
 
 #2️⃣ Transformar em matriz (wide)
-mat_epi_fam <- tab_epi_fam %>%
+mat_epi_fam <-as.data.frame( tab_epi_fam %>%
   pivot_wider(
     names_from = BS_Family,
     values_from = n,
     values_fill = 0
-  )
+  ))
 
-library(dplyr)
+writexl::write_xlsx(mat_epi_fam, "Data/epibiontes-familiabase.xlsx")
+
+#procurando os valores de na 
+# - Está tudo tranquilo, sem nas
+colSums(is.na(mat_epi_fam))
+
+colunas<- mat_epi_fam[2-20] #seleciona só as colunas
+
+  
+  
+  ##################################################################
+
 
 mat_ca <- mat_epi_fam %>%
   column_to_rownames("Scientific_name_EP") %>%
@@ -623,7 +619,7 @@ library(vegan)
 ca_res <- cca(mat_ca)
 summary(ca_res)
 
-plot(ca_res, scaling = 2)
+plot(ca_res, scaling = 2)~~
 
 #🎨 6️⃣ Gráfico bonito com ggplot (recomendado)
 library(ggplot2)
