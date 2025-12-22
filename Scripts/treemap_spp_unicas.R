@@ -589,6 +589,9 @@ tab_epi_fam <- df1 %>%
   filter(!is.na(Scientific_name_EP), !is.na(BS_Family)) %>%
   count(Scientific_name_EP, BS_Family, name = "n") 
 
+write.csv(tab_epi_fam, "Data/epibiontes-familiabase-tab.csv")
+
+
 #2️⃣ Transformar em matriz (wide)
 mat_epi_fam <-as.data.frame( tab_epi_fam %>%
   pivot_wider(
@@ -598,6 +601,7 @@ mat_epi_fam <-as.data.frame( tab_epi_fam %>%
   ))
 
 writexl::write_xlsx(mat_epi_fam, "Data/epibiontes-familiabase.xlsx")
+write.csv(mat_epi_fam, "Data/epibiontes-familiabase.csv")
 
 #procurando os valores de na 
 # - Está tudo tranquilo, sem nas

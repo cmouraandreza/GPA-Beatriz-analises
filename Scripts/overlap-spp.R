@@ -29,7 +29,6 @@ library(tidyverse)
 df1<- readxl::read_xlsx("Data/COPIA-Database_epizoism_hydroids-bea.xlsx")
 colnames(df1
          )
-"Scientific_name_EP",  "Scientific_name_BS"
 library(vegan)
 
 
