@@ -63,3 +63,39 @@ fisher.test(mat_num, simulate.p.value = TRUE, B = 10000)
 #As famílias de hidroides diferiram significativamente em seus papéis ecológicos,
 #com uma distribuição não aleatória entre funções de epibionte e basibionte (χ²,
 #Monte Carlo p < 0,001).
+#-------------------------------------------------------------------------------
+
+
+chisq.test(mat_num, simulate.p.value = TRUE, B = 10000)
+
+#--- - ---------------------------------------------------------------------------
+#resultado
+#data:  mat_num
+#X-squared = 165.61, df = NA, p-value = 9.999e-05
+# não é ao acaso
+
+#--- - ---------------------------------------------------------------------------
+
+
+res <- chisq.test(mat_num, simulate.p.value = TRUE, B = 10000)
+
+res_std <- res$stdres
+res_std
+
+#extraindo famílias significantes
+library(dplyr)
+library(tibble)
+
+res_df <- as.data.frame(res_std) |>
+  rownames_to_column("family") |>
+  pivot_longer(-family, names_to = "role", values_to = "std_resid") |>
+  filter(abs(std_resid) > 2) |>
+  arrange(desc(abs(std_resid)))
+
+res_df
+writexl::write_xlsx(res_df, "Data/residuos-qui-familias-frequentes.xlsx")
+
+#teste não aplicável ----
+glm(cbind(Epibionte, Basibionte) ~ family,
+    family = binomial,
+    data = df_wider)

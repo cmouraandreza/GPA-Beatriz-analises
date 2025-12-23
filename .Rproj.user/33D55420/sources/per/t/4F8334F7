@@ -3,7 +3,7 @@
     "path": "E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises/Scripts/tests-fisher-outros-dez-25.R",
     "project_path": "Scripts/tests-fisher-outros-dez-25.R",
     "type": "r_source",
-    "hash": "295012646",
+    "hash": "2795528062",
     "contents": "",
     "dirty": false,
     "created": 1766489015439.0,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "64,1",
-        "scrollLine": "42"
+        "cursorPosition": "93,0",
+        "scrollLine": "78"
     },
     "folds": "",
-    "lastKnownWriteTime": 1766490289,
+    "lastKnownWriteTime": 1766494315,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1766490289091,
+    "last_content_update": 1766494315942,
     "read_only": false,
     "read_only_alternatives": []
 }
