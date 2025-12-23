@@ -28,7 +28,7 @@ nomes_separados <- separate(df_raw,
                             col = "Scientific_name_EP", 
                             into = c("genero", "especifico"), 
                             sep = " ")
-
+head(nomes_separados)
 
 
 
@@ -45,6 +45,7 @@ nomes_separados <- nomes_separados %>%
       paste(genero_inicial, especifico)
     )
   )
+
 head(nomes_separados)
 
 df_modif<-nomes_separados%>%
