@@ -1,4 +1,4 @@
-# outras analises-  overlap de spp 
+# outras analises-  teste de qui-quadrado e fisher 
 
 #23.12.2025
 
@@ -21,6 +21,7 @@ df2<-dplyr::select(df1,"Scientific_name_EP", "EP_family", "Scientific_name_BS","
 head(df2)
 df2
 
+# transformando o df em formato long
 
 df_long <- df1 |>
   select(EP_family, BS_Family) |>
@@ -33,23 +34,25 @@ df_long <- df1 |>
     role = ifelse(role == "EP_family", "Epibionte", "Basibionte")
   )
 
-#contar
+#contagem das repeticoes
+
 df_count <- df_long |>
   count(family, role)
 
-#transfome em wider
+#transfome em wider - separando basi e epi- matriz de contigência
 
 df_wider <- df_count |>
   pivot_wider(names_from  = role,
               values_from = n,
               values_fill = 0) 
 
-# Matriz para o teste
+# Matriz para o teste - transformando em matriz- abundancia
 mat_num <- df_wider |>
   column_to_rownames("family") |>
   as.matrix()
 
-# 🧪 Teste
+# 🧪 Teste de fisher simulado com permutações
+
 fisher.test(mat_num, simulate.p.value = TRUE, B = 10000)
 
 #-------------------------------------------------------------------------------
@@ -64,9 +67,26 @@ fisher.test(mat_num, simulate.p.value = TRUE, B = 10000)
 #com uma distribuição não aleatória entre funções de epibionte e basibionte (χ²,
 #Monte Carlo p < 0,001).
 #-------------------------------------------------------------------------------
+# qui-quadrado -----
+count<-table(df_wider$Epibionte, df_wider$Basibionte)
 
+chisq.test(count)
+
+# erros associados ao qui-quadrado normal - não funcionou aqui:
+
+# muitas famílias raras;
+# muitas células com zero observado;
+# totais marginais pequenos;
+# frequências esperadas muito baixas (muitas < 1).
+# não é um erro, mas o teste normal não aguenta tantos zeros
+
+
+# qui-quadrado simulado-----
 
 chisq.test(mat_num, simulate.p.value = TRUE, B = 10000)
+
+#df= na - os graus de liberdade não foram usados, pois a simulação  vem do monte-carlo
+#os graus de liberdade não são usados para calcular o p-valor
 
 #--- - ---------------------------------------------------------------------------
 #resultado
@@ -76,6 +96,7 @@ chisq.test(mat_num, simulate.p.value = TRUE, B = 10000)
 
 #--- - ---------------------------------------------------------------------------
 
+#residuos do qui-quadrado simulado----
 
 res <- chisq.test(mat_num, simulate.p.value = TRUE, B = 10000)
 
@@ -93,9 +114,12 @@ res_df <- as.data.frame(res_std) |>
   arrange(desc(abs(std_resid)))
 
 res_df
-writexl::write_xlsx(res_df, "Data/residuos-qui-familias-frequentes.xlsx")
+#salvando os residuos
+#writexl::write_xlsx(res_df, "Data/residuos-qui-familias-frequentes.xlsx")
 
-#teste não aplicável ----
-glm(cbind(Epibionte, Basibionte) ~ family,
-    family = binomial,
-    data = df_wider)
+# no caso dos dois testes, tanto quii-quadrado, uanto fisher, simulado respondem a nossa pergunta
+# sem cair em erros metodológicos
+# sim o qui-quadrado simulado pode ser usado em matrizes de contigência maiores que 2x2
+# isso não altera a natureza dos dados categóricos
+# consulte legendre & legendre: Numerical ecology, 2012
+

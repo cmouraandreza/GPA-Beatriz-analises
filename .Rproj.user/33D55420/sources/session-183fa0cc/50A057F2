@@ -1,12 +1,12 @@
 {
-    "id": "E0F4ABB5",
+    "id": "50A057F2",
     "path": null,
     "project_path": null,
     "type": "r_dataframe",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1766489762598.0,
+    "created": 1767616044726.0,
     "source_on_save": false,
     "relative_order": 9,
     "properties": {
@@ -15,10 +15,10 @@
         "totalObservations": "30",
         "displayedObservations": "30",
         "variables": "3",
-        "cacheKey": "D0C31F19",
+        "cacheKey": "A7C43372",
         "object": "df_wider",
         "environment": "",
-        "contentUrl": "grid_resource/gridviewer.html?env=&obj=df_wider&cache_key=D0C31F19&max_display_columns=50",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=df_wider&cache_key=A7C43372&max_display_columns=50",
         "preview": "0",
         "source_window_id": "",
         "Source": "Source"
@@ -28,7 +28,7 @@
     "encoding": "",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1766489762598,
+    "last_content_update": 1767616044726,
     "read_only": false,
     "read_only_alternatives": []
 }
