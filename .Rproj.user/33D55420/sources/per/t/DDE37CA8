@@ -1,0 +1,27 @@
+{
+    "id": "DDE37CA8",
+    "path": "E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises/Scripts/grafico-rede-bipartida-generos-circular.R",
+    "project_path": "Scripts/grafico-rede-bipartida-generos-circular.R",
+    "type": "r_source",
+    "hash": "1753567999",
+    "contents": "",
+    "dirty": false,
+    "created": 1767641050771.0,
+    "source_on_save": false,
+    "relative_order": 15,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "274,0",
+        "scrollLine": "258"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1767656099,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1767656099640,
+    "read_only": false,
+    "read_only_alternatives": []
+}
