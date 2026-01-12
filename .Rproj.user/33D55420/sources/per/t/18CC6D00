@@ -1,0 +1,27 @@
+{
+    "id": "18CC6D00",
+    "path": "E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises/Scripts/grafico-barras-empilhadas-12.01.R",
+    "project_path": "Scripts/grafico-barras-empilhadas-12.01.R",
+    "type": "r_source",
+    "hash": "1597929847",
+    "contents": "",
+    "dirty": false,
+    "created": 1767706070426.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "330,0",
+        "scrollLine": "303"
+    },
+    "folds": "93|22|133|0|\n94|67|132|0|\n134|22|174|1|\n175|35|221|2|\n",
+    "lastKnownWriteTime": 1768246348,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1768246348321,
+    "read_only": false,
+    "read_only_alternatives": []
+}

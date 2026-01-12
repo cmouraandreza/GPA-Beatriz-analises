@@ -1,0 +1,83 @@
+# Criar df long para EPIBIONTE
+dados_epi_long <- dados %>%
+  select(all_of(cols_epi)) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "atributo",
+    values_to = "categoria"
+  ) %>%
+  mutate(
+    grupo = "Epibionte",
+    atributo = gsub("1$", "", atributo)
+  )
+
+# Criar df long para BASIBIONTE
+dados_base_long <- dados %>%
+  select(all_of(cols_base)) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "atributo",
+    values_to = "categoria"
+  ) %>%
+  mutate(
+    grupo = "Basibionte",
+    atributo = gsub("2$", "", atributo)
+  )
+
+# Unindo num df long
+dados_long <- bind_rows(dados_epi_long, dados_base_long) %>%
+  filter(!is.na(categoria), categoria != "")
+
+# Limpar prefixos B- e E-
+dados_long <- dados_long %>%
+  mutate(
+    categoria = gsub("^[BE]-", "", categoria)
+  )
+
+# AGORA CONTA AS OCORRÊNCIAS
+dados_long <- dados_long %>%
+  group_by(grupo, atributo, categoria) %>%
+  summarise(n = n(), .groups = "drop")
+
+# Verificar atributos únicos
+unique(dados_long$atributo)
+
+# Testar plot
+library(ggplot2)
+
+ggplot(dados_long, aes(x = grupo, fill = categoria, weight = n)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ atributo, scales = "free_y") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    x = NULL,
+    y = "Distribuição relativa (%)",
+    fill = "Categorias"
+  ) +
+  theme_classic()
+
+# Função do plot permanece igual
+plot_atributo <- function(df, nome_atributo, titulo_legenda) {
+  
+  df %>%
+    dplyr::filter(atributo == nome_atributo) %>%
+    ggplot(aes(x = grupo, fill = categoria, weight = n)) +
+    geom_bar(position = "fill", width = 0.8) +
+    scale_y_continuous(labels = scales::percent_format()) +
+    labs(
+      x = NULL,
+      y = "Distribuição relativa (%)",
+      fill = titulo_legenda
+    ) +
+    theme_classic() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      panel.grid = element_blank(),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_rect(fill = "white"),
+      legend.position = "top",
+      legend.title = element_text(face = "bold")
+    ) +
+    theme(axis.text.y = element_text(angle = 90, hjust = 0.5))
+}
