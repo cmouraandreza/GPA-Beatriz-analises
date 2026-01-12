@@ -1,0 +1,411 @@
+
+setwd("E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises")
+getwd()
+
+# Pacotes
+library(dplyr)
+library(tidyr)
+library(readr)
+library(igraph)
+library(bipartite)
+
+# ---------------------------
+# 0) CONFIG: ajuste aqui
+# ---------------------------
+#subindo os dados
+dados<-readxl::read_xlsx("Data/COPIA-Database_epizoism_hydroids-bea.xlsx")
+
+
+colnames(dados)
+
+cut_data<-dados%>%
+  count(EP_Genera, BS_Family)%>%
+  rename(
+    familia = all_of("BS_Family"),
+    especie = all_of("EP_Genera"))
+
+#Nomes das colunas do seu dataframe:
+  # (troque aqui se necessário)
+COL_FAMILIA <- "BS_Family"   # ex: "BS_Family" ou "Family_base"
+COL_GENERO <- "EP_Genera"   # ex: "Scientific_name_EP" ou "Species_epi"
+COL_WEIGHT  <- "n"                 # se você já tem contagem numa coluna (ex: "n"), coloque "n"
+#
+
+df1 <- cut_data %>%
+  # garante que as colunas existem
+  rename(
+    familia = all_of("BS_Family"),
+    especie = all_of("EP_Genera")
+  )%>%
+  # remove NAs e strings vazias
+  filter(
+    !is.na(familia), !is.na(especie),
+    familia != "", especie != "") # mudou de nome mas ñ verificou celulas NA
+
+
+# Soma pesos (caso já exista uma coluna com valores)
+mat_df <- cut_data %>%
+  mutate(weight = as.numeric(.data[[COL_WEIGHT]])) %>%
+  filter(!is.na(weight)) %>%
+  group_by(familia, especie) %>%
+  summarise(weight = sum(weight), .groups = "drop")
+
+
+if (is.null(COL_WEIGHT)) {
+  
+  # Conta ocorrências (cada linha = uma ocorrência)
+  mat_df <- cut_data %>%
+    count(familia, especie, name = "weight")
+  
+} else {
+  
+  # Soma pesos (caso já exista uma coluna com valores)
+  mat_df <- cut_data %>%
+    mutate(weight = as.numeric(.data[[COL_WEIGHT]])) %>%
+    filter(!is.na(weight)) %>%
+    group_by(familia, especie) %>%
+    summarise(weight = sum(weight), .groups = "drop")
+}
+# Pivot para matriz (família nas linhas, espécie nas colunas)
+m <- mat_df %>%
+  pivot_wider(
+    names_from = especie,
+    values_from = weight,
+    values_fill = 0
+  ) %>%
+  as.data.frame()
+
+# 3) Garantir rownames/colnames corretos + matriz numérica
+# ---------------------------
+
+# primeira coluna = nomes das famílias
+rownames(m) <- m$familia
+m$familia <- NULL
+
+# vira matriz e força numérico
+m <- as.matrix(m)
+storage.mode(m) <- "numeric"
+# remove linhas/colunas totalmente zeradas (boa prática)
+m <- m[rowSums(m) > 0, colSums(m) > 0, drop = FALSE]
+
+# checagens rápidas
+stopifnot(!is.null(rownames(m)))
+stopifnot(!is.null(colnames(m)))
+stopifnot(is.numeric(m[1, 1]))
+#========================
+# 1) Matriz limpa
+#========================
+m2 <- m[rowSums(m) > 0, colSums(m) > 0, drop = FALSE]
+
+storage.mode(m2) <- "numeric"
+m2[is.na(m2)] <- 0
+
+familias <- rownames(m2)
+generos <- colnames(m2)
+
+#========================
+# 2) Edges: espécie -> família
+#========================
+edges <- which(m > 0, arr.ind = TRUE)
+
+df_edges <- data.frame(
+  from   = generos[edges[,2]],
+  to     = familias[edges[,1]],
+  weight = m2[edges]
+)
+
+df_edges$weight <- as.numeric(df_edges$weight)
+
+g <- graph_from_data_frame(df_edges, directed = TRUE)
+
+#========================
+# 3) Bipartição robusta
+#========================
+V(g)$type <- V(g)$name %in% familias
+V(g)$group <- ifelse(V(g)$type, "familia", "genero")
+
+#========================
+# 4) Pesos e força
+#========================
+E(g)$weight <- df_edges$weight
+V(g)$strength <- igraph::strength(g)
+
+max_strength <- max(V(g)$strength, na.rm = TRUE)
+if (!is.finite(max_strength) || max_strength == 0) max_strength <- 1
+
+max_w <- max(E(g)$weight, na.rm = TRUE)
+if (!is.finite(max_w) || max_w == 0) max_w <- 1
+
+#========================
+# 5) Estética: nós
+#========================
+V(g)$color <- NA
+V(g)$color[V(g)$type]  <- adjustcolor("salmon",  alpha.f = 0.9)   # famílias
+V(g)$color[!V(g)$type] <- adjustcolor("gold", alpha.f = 0.85)  # espécies (verde como na imagem)
+
+#V(g)$frame.color <- ifelse(V(g)$type, "#457b9d",  "salmon2")
+
+V(g)$frame.width <- 0.8
+
+V(g)$size <- ifelse(
+  V(g)$type,
+  5 + 8 * sqrt(V(g)$strength / max_strength),   # famílias
+  3 + 6 * sqrt(V(g)$strength / max_strength)    # espécies
+)
+
+V(g)$frame.color <- "gray30"
+#esp <- which(!V(g)$type)
+#rank <- order(V(g)$strength[esp], decreasing = TRUE)
+#top <- esp[rank[1:min(25, length(esp))]]
+#V(g)$frame.color[top] <- "black"
+#V(g)$frame.width[top] <- 2
+#========================
+# 6) Estética: arestas e setas
+#========================
+E(g)$color <- adjustcolor("salmon3", alpha.f = 0.25)
+E(g)$curved <- 0
+
+w_norm <- sqrt(E(g)$weight / max_w)
+E(g)$width <- 0.3 + 2.2 * w_norm
+
+E(g)$arrow.size  <- 0.3
+E(g)$arrow.width <- 1.0
+
+E(g)$width <- 0.3 + 2.2 * w_norm
+
+
+
+#========================
+# 7) Rótulos - TODOS
+#========================
+V(g)$label <- V(g)$name
+
+# deixa o texto menor pra caber melhor
+V(g)$label.cex  <- ifelse(V(g)$type, 0.75, 0.55)
+V(g)$label.font <- ifelse(V(g)$type, 2, 3)
+V(g)$label.color <- ifelse(V(g)$type, "black", "navy")
+
+# distância do label: espécies um pouco pra fora
+V(g)$label.dist <- ifelse(V(g)$type, 1.6, 0.6)
+
+# fundo branco ajuda MUITO
+V(g)$label.bg <- adjustcolor("white", alpha.f = 0.7)
+
+
+
+
+
+#========================
+# 8) LAYOUT RADIAL - FAMÍLIAS NA PERIFERIA (melhorado)
+#    espécies em múltiplos anéis para espaçar mais
+#========================
+set.seed(42)
+
+especies_idx <- which(!V(g)$type)
+familias_idx <- which(V(g)$type)
+
+n_esp <- length(especies_idx)
+n_fam <- length(familias_idx)
+
+lay <- matrix(0, nrow = vcount(g), ncol = 2)
+
+
+# FAMÍLIAS: círculo externo (aumenta o raio)
+if (n_fam > 0) {
+  ang_fam <- seq(0, 2*pi, length.out = n_fam + 1)[1:n_fam]
+  raio_fam <- 22  # <-- aumente mais se quiser mais “respiro”
+  lay[familias_idx, 1] <- raio_fam * cos(ang_fam)
+  lay[familias_idx, 2] <- raio_fam * sin(ang_fam)
+}
+
+# ESPÉCIES: múltiplos anéis (quanto mais espécie, mais anéis)
+if (n_esp > 0) {
+  esp_strength <- V(g)$strength[especies_idx]
+  esp_strength_norm <- esp_strength / max(esp_strength)
+  
+  # define número de anéis dinamicamente (ajuste esses limites se quiser)
+  n_rings <- max(3, min(7, ceiling(n_esp / 12)))  # ~12 espécies por anel
+  ring_id <- cut(esp_strength_norm,
+                 breaks = quantile(esp_strength_norm, probs = seq(0, 1, length.out = n_rings + 1), na.rm = TRUE),
+                 include.lowest = TRUE, labels = FALSE)
+  
+  # raios dos anéis (mais espaçados)
+  raio_min <- 5
+  raio_max <- 17   # deve ser sempre < raio_fam
+  raios <- seq(raio_min, raio_max, length.out = n_rings)
+  
+  # ordena as espécies pra distribuir melhor no círculo
+  ord <- order(ring_id, -esp_strength_norm)
+  esp_ordered <- especies_idx[ord]
+  ring_ordered <- ring_id[ord]
+  
+  for (r in 1:n_rings) {
+    nodes_r <- esp_ordered[ring_ordered == r]
+    k <- length(nodes_r)
+    if (k == 0) next
+    
+    # ângulos desse anel
+    ang <- seq(0, 2*pi, length.out = k + 1)[1:k]
+    
+    # pequeno jitter pra evitar empilhamento perfeito
+    ang <- ang + runif(k, -0.04, 0.04)
+    
+    lay[nodes_r, 1] <- raios[r] * cos(ang)
+    lay[nodes_r, 2] <- raios[r] * sin(ang)
+  }
+}
+
+# Ajuste para melhorar distribuição (opcional - descomente se quiser)
+# Adiciona pequena repulsão para evitar sobreposição
+# set.seed(42)
+# lay <- layout_with_fr(g, niter = 300, coords = lay, 
+#                       area = vcount(g)^2, repulserad = vcount(g)^2.5)
+
+#========================
+# 9) Plot na tela
+#========================
+par(mar = c(0, 0, 0, 0), bg = "white")
+plot(
+  g,
+  layout = lay,
+  vertex.label.dist = ifelse(V(g)$type, 1.3, 0.7),  # labels de famílias mais afastados
+  vertex.label.degree = -pi/2,  # labels para fora
+  asp = 0
+)
+par(mar = c(0, 0, 0, 0), bg = "white")
+
+
+
+
+
+#========================
+# 10) Salvar (SEM SVG vazio)
+#========================
+# SVG
+svg("Plots/rede_bipartida-generos2.svg", width = 12, height = 7)
+par(mar = c(0, 0, 0, 0))
+plot(
+  g,
+  layout = lay,
+  #vertex.label.dist = label_dist,
+  vertex.label.degree = ifelse(V(g)$type, -pi/2, 0),
+  vertex.label.cex = V(g)$label.cex,
+  asp = 0
+)
+dev.off()
+
+# 
+# grau dos nós-----
+# grau dos nós
+deg <-  igraph::degree(g, mode = "all")
+
+# famílias
+familias_idx <- which(V(g)$type)
+
+# famílias com grau 1
+familias_grau1 <- V(g)$name[familias_idx][deg[familias_idx] == 1]
+
+familias_grau1
+
+
+
+result <- lapply(familias_grau1, function(fam) {
+  neigh <- neighbors(g, fam, mode = "in")  # gêneros → família
+  data.frame(
+    familia = fam,
+    genero  = V(g)$name[neigh]
+  )
+})
+
+do.call(rbind, result)
+
+df_fam <- data.frame(
+  familia  = V(g)$name[familias_idx],
+  grau     = deg[familias_idx],
+  strength = V(g)$strength[familias_idx]
+)
+
+# filtra grau 1
+df_fam_grau1 <- df_fam[df_fam$grau == 1, ]
+
+df_fam_grau1
+
+#familia grau strength
+# Hebellidae       Hebellidae    1        1
+# Stylasteridae Stylasteridae    1        1
+# Tiarannidae     Tiarannidae    1        1
+# Oceaniidae       Oceaniidae    1        1
+
+
+
+
+# grau de entrada (quantos gêneros ligam a cada família) ----
+deg_in <- igraph::degree(g, mode = "in")
+
+# índices das famílias
+familias_idx <- which(V(g)$type)
+
+# monta a tabela
+tabela_familias <- data.frame(
+  familia  = V(g)$name[familias_idx],
+  grau     = deg_in[familias_idx],
+  strength = V(g)$strength[familias_idx]
+)
+
+# ordena por grau (decrescente) e depois por força
+tabela_familias <- tabela_familias[
+  order(-tabela_familias$grau, -tabela_familias$strength),
+]
+
+# reseta rownames
+row.names(tabela_familias) <- NULL
+
+tabela_familias
+
+
+
+# layout forçado para material suplementar----- nao usar -----
+
+lay_fr <- layout_with_fr(
+  g,
+  weights = 1 / (E(g)$weight + 1e-9),  # arestas mais fortes "puxam" mais
+  niter = 2000,
+  grid  = "nogrid"
+)
+# (opcional) expande um pouco o layout (mais espaço entre nós)
+lay_fr <- lay_fr * 1.3
+
+par(mar=c(0,0,0,0), bg="white")
+plot(
+  g,
+  layout = lay_fr,
+  vertex.color = V(g)$color,
+  vertex.frame.color = V(g)$frame.color,
+  vertex.frame.width = V(g)$frame.width,
+  vertex.size = V(g)$size,
+  edge.color = E(g)$color,
+  edge.width = E(g)$width,
+  edge.arrow.size = E(g)$arrow.size,
+  edge.arrow.width = E(g)$arrow.width,
+  vertex.label = V(g)$label,         # aqui entram todos os labels, se você quiser
+  vertex.label.cex = V(g)$label.cex,
+  vertex.label.color = V(g)$label.color,
+  asp = 0
+)
+
+
+# plotar
+set.seed(42)
+
+lay_kk <- layout_with_kk(
+  g,
+  weights = 1 / (E(g)$weight + 1e-9),
+  maxiter = 2000
+)
+
+lay_kk <- lay_kk * 1.2
+
+plot(g, layout = lay_kk, asp=0)
+
+
+#

@@ -1,0 +1,521 @@
+# DISTRIBUICAO RELATIVA DAS ESPECIES
+
+setwd("E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises")
+getwd()
+
+library(ade4)
+library(readxl)
+library(tidyverse)
+library(janitor)
+library(dplyr)
+library(naniar)
+#pre-processamento -----
+
+
+# recuperando tabela utilizada
+dados<-readxl::read_xlsx("Data/COPIA-Database_epizoism_hydroids-bea.xlsx")
+
+
+str(dados)
+
+#dados_crus<-readxl::read_xlsx("atributos.xlsx", sheet=3)
+
+
+
+colnames(dados)
+
+
+teste.disp<- dados%>%
+  select("Comp.total","Substrato","Arranjo.eixo" ,"N.Anel","Padrão.hidroteca","Padrão.ramif", "BD.eixo",
+         "C.perissarco","H.perissarco" , "G.perissarco" ,"Ciclo.vida","Colonialismo" ,"Reprodução" ,"Salinidade","Temperatura"   )
+
+
+
+dados_filtrados <- teste.disp %>%
+  filter(Temperatura >= 0 & Temperatura<= 30)
+
+
+
+#sumarizando os dados 
+# verificando 
+summary(dados_filtrados$Comp.total)
+
+
+
+# colocando dados de charcter para numeric
+#dados_filtrados <- dados_filtrados %>%
+#  mutate(across(where(is.character), as.numeric))
+# joga tudo como numerico
+
+# coloca uma coluna como num
+# Se sua coluna está em um data frame chamado 'dados'
+dados_filtrados$Comp.total <- as.numeric(dados_filtrados$Comp.total)
+
+library(dplyr)
+dados_filtrados1 <- dados_filtrados %>%
+  mutate_if(is.character, as.factor)
+
+
+
+dados_filtrados1$BD.eixo <- as.numeric(gsub(",", ".", dados_filtrados1$BD.eixo))
+str(dados_filtrados1)
+# Primeiro, certifique-se que dados_filtrados é um data frame
+#dados_filtrados <- dados_filtrados %>%
+# mutate(Substrate = as.factor(Substrate))  # ou mantenha como character se preferir
+
+# RETIRANDO na
+dados_filtrados1 <- dados_filtrados1 %>%
+  filter(!is.na(Comp.total))
+
+# filtrando os outliers
+# Filtra as linhas onde x < 15000
+dados_filtrados1 <- dados_filtrados1 %>%
+  filter(Comp.total < 15.000)
+
+#dados_filtrados <- dados_filtrados %>%
+
+dados_filtrados2 <- dados_filtrados1[dados_filtrados1$Salinidade >= 32.5, ]
+dados_filtrados3 <- dados_filtrados2[dados_filtrados2$Comp.total <= 10.00, ]
+str(dados_filtrados3)
+
+dados_filtrados3 <- dados_filtrados3 %>% filter(!is.na(Salinidade_Classe))
+
+
+# 📌 Instalar e carregar pacotes necessários ----
+#install.packages(c("car", "ggplot2", "dplyr"))
+library(car)      # Para o teste de Levene
+library(ggplot2)  # Para visualização dos dados
+library(dplyr)    # Para manipulação de dados
+
+# 📌 Carregar os dados (substituir pelo seu dataset)
+# Exemplo: Suponha que temos uma variável categórica "Grupo" e duas variáveis contínuas "Var1" e "Var2"
+
+# 📌 Teste de normalidade (Shapiro-Wilk) para cada variável contínua dentro de cada grupo
+by(dados_filtrados3$Salinidade, dados_filtrados3$Substrato, shapiro.test)
+by(dados_filtrados3$Temperatura, dados_filtrados3$Substrato, shapiro.test)
+
+# 📌 Teste de homogeneidade das variâncias (Levene)
+leveneTest(Salinidade ~ Substrato, data = dados_filtrados3)  # Para Var1
+leveneTest(Temperatura ~ Substrato, data = dados_filtrados3)  # Para Var2
+
+# 📌 Escolher o teste adequado com base nos resultados
+# Se normalidade e homocedasticidade forem confirmadas → ANOVA padrão
+# Se variâncias forem diferentes → ANOVA de Welch
+# Se os dados não forem normais → Kruskal-Wallis
+
+# 📌 ANOVA padrão (se as premissas forem atendidas)
+anova1 <- aov(Salinidade ~ Substrato, data = dados_filtrados3)
+anova2 <- aov(Temperatura ~ Substrato, data = dados_filtrados3)
+summary(anova1)
+summary(anova2)
+
+# 📌 ANOVA de Welch (se variâncias forem diferentes)
+oneway.test(Salinidade ~ Substrato, data = dados_filtrados3, var.equal = FALSE)
+oneway.test(Temperatura ~ Substrato, data = dados_filtrados3, var.equal = FALSE)
+
+# 📌 Teste de Kruskal-Wallis (se os dados não forem normais)
+kruskal.test(Var1 ~ Grupo, data = dados)
+kruskal.test(Var2 ~ Grupo, data = dados)
+
+# 📌 Se a ANOVA ou Kruskal-Wallis forem significativas, realizar comparações múltiplas:
+# Para ANOVA: Teste de Tukey
+TukeyHSD(anova1)
+TukeyHSD(anova2)
+
+# Para Kruskal-Wallis: Teste de Dunn (usando PMCMRplus)
+install.packages("PMCMRplus")
+library(PMCMRplus)
+dunn.test <- kwAllPairsDunnTest(Var1 ~ Grupo, data = dados)
+print(d)
+
+
+########################
+# 📌 Criar o gráfico de dispersão com linha de regressão
+a<-ggplot(dados_filtrados3, aes(x = Temperatura, y = Comp.total)) +
+  geom_point( color= "blue", size= 3, alpha = 0.6) +  # Pontos azuis semi-transparente
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Linha de regressão em vermelho
+  labs(
+    x = "Temperatura (°C)",
+    y = "Comprimento da Colônia (cm)"
+  ) +
+  theme(
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    legend.position = "right",  # legenda horizontal embaixo
+    legend.direction = "vertical",
+    
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  )+
+  annotate("text", x = 1, y = 11.5, label = "(a)",
+           fontface = "bold", size=5)
+a
+#salinidade x substrato  
+b<-ggplot(dados_filtrados3, aes(x = Comp.total, y = Substrato)) +
+  geom_point( color= "blue", size= 3, alpha = 0.6) +  # Pontos azuis semi-transparente
+  geom_smooth(method = "lm", color = "red", se = TRUE) +  # Linha de regressão em vermelho
+  labs(
+    x = "Temperatura (°C)",
+    y = "Comprimento da Colônia (cm)"
+  ) +
+  theme(
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    legend.position = "right",  # legenda horizontal embaixo
+    legend.direction = "vertical",
+    
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  )+
+  annotate("text", x = 1, y = 11.5, label = "(a)",
+           fontface = "bold", size=5)
+b   
+
+########
+
+# 📌 Criar classes de salinidade sem lacunas
+dados_filtrados3$Salinidade_Classe <- cut(
+  dados_filtrados3$Salinidade, 
+  breaks = seq(floor(min(dados_filtrados3$Salinidade)), 
+               ceiling(max(dados_filtrados3$Salinidade)), 
+               by = 2),  # Ajuste o intervalo (by) para garantir cobertura
+  include.lowest = TRUE, 
+  right = FALSE  # Intervalos à esquerda fechados para evitar buracos
+)
+
+# 📌 Criar classes de temperatura sem lacunas
+dados_filtrados3$Temperatura_Classe <- cut(
+  dados_filtrados3$Temperatura, 
+  breaks = seq(floor(min(dados_filtrados3$Temperatura)), 
+               ceiling(max(dados_filtrados3$Temperatura)), 
+               by = 5),  # Ajuste o intervalo conforme necessário
+  include.lowest = TRUE, 
+  right = FALSE
+)
+
+# 📌 Verificar se todas as classes foram preenchidas corretamente
+table(dados_filtrados3$Salinidade_Classe)
+table(dados_filtrados3$Temperatura_Classe)
+
+
+
+# 📌 Calcular proporção dentro de cada classe de salinidade
+dados_summary <- dados_filtrados3 %>%
+  group_by(Temperatura_Classe, Substrato) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Temperatura_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+# grafico 
+# 📌 Criar o gráfico de barras empilhadas
+a<-ggplot(dados_summary, aes(x = Proporcao, y = Temperatura_Classe,  fill = Substrato)) +
+  geom_bar(stat = "identity", position = "stack", alpha = 0.6) +  # Empilhamento padrão
+  labs(title = "Temperatura(ºC)",
+       y = "Temperatura (ºC)",
+       fill = "(a/b) Substrato") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("lightblue", "#ff6d00","gold", "black")) +  # Definir cores diferentes para os ciclos
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text", x = 1, y = 6.2, label = "(a)",
+           fontface = "bold", size=5)
+
+a
+# 📌 Calcular proporção dentro de cada classe de salinidade
+dados_summary2 <- dados_filtrados3 %>%
+  group_by(Salinidade_Classe, Substrato) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Salinidade_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+# grafico 
+# 📌 Criar o gráfico de barras empilhadas
+b<-ggplot(dados_summary2, aes(x = Proporcao, y = Salinidade_Classe,  fill = Substrato)) +
+  geom_bar(stat = "identity", position = "stack", alpha = 0.6) +  # Empilhamento padrão
+  labs(title = "Salinidade (ppm)",
+       y = "Salinidade (ppm)",
+       fill = "(a/b) Substrato") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("lightblue", "#ff6d00","gold", "black")) +  # Definir cores diferentes para os ciclos
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text", x = 1, y = 3.4,color="gray4", label = "(b)",
+           fontface = "bold", size=5)
+b  
+
+# Arranjo do eixo  # 📌 ----------------
+colnames(dados_filtrados3)
+# 📌 Calcular proporção dentro de cada classe de salinidade
+dados_summary4 <- dados_filtrados3 %>%
+  group_by(Temperatura_Classe, Arranjo.eixo) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Temperatura_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+c<-ggplot(dados_summary4, aes(x = Proporcao, y = Temperatura_Classe,  fill = Arranjo.eixo)) +
+  geom_bar(stat = "identity", position = "stack") +  # Empilhamento padrão
+  labs(
+    y = "Temperatura (ºC)",
+    fill = "(c/d) Arranjo do hidrocaule") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("salmon", "lightblue")) +  # Definir cores diferentes para os ciclos
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text", x = 1, y = 6.2, label = "(c)",
+           fontface = "bold", size=5)
+c
+
+
+
+dados_summary3 <- dados_filtrados3 %>%
+  group_by(Salinidade_Classe, Arranjo.eixo) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Salinidade_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+d<-ggplot(dados_summary3, aes(x = Proporcao, y = Salinidade_Classe,  fill = Arranjo.eixo)) +
+  geom_bar(stat = "identity", position = "stack") +  # Empilhamento padrão
+  labs(
+    y = "Salinidade (ppm)",
+    fill = "(c/d) Arranjo do hidrocaule") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("salmon", "lightblue")) +  # Definir cores diferentes para os ciclos
+  
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text", x = 1, y = 3.4, label = "(d)",
+           fontface = "bold", size=5)
+d 
+
+
+# Padrões de ramificação 📌📌 -------
+colnames(dados_filtrados3)
+
+dados_summary4.1 <- dados_filtrados3 %>%
+  group_by(Temperatura_Classe, Padrão.ramif) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Temperatura_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+e<-ggplot(dados_summary4.1, aes(x = Proporcao, y = Temperatura_Classe,  fill = Padrão.ramif)) +
+  geom_bar(stat = "identity", position = "stack",alpha = 0.6) +  # Empilhamento padrão
+  labs(
+    y = "Temperatura (ºC)",
+    fill = "(e/f) Padrões de Ramificação") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text",x = 1, y = 6.2, label = "(e)",
+           fontface = "bold", size=5)
+e
+
+
+
+dados_summary4.2 <- dados_filtrados3 %>%
+  group_by(Salinidade_Classe, Padrão.ramif) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Salinidade_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+f<-ggplot(dados_summary4.2, aes(x = Proporcao, y = Salinidade_Classe,  fill = Padrão.ramif)) +
+  geom_bar(stat = "identity", position = "stack",alpha = 0.6) +  # Empilhamento padrão
+  labs(
+    y = "Salinidade (ppm)",
+    fill = "(e/f) Padrões de Ramificação") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text", x = 1, y = 3.4, label = "(f)",
+           fontface = "bold", size=5)
+f 
+
+
+# Ciclo de vida -📌-----
+colnames(dados_filtrados3)
+
+dados_summary4.3 <- dados_filtrados3 %>%
+  group_by(Temperatura_Classe, Ciclo.vida) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Temperatura_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+g<-ggplot(dados_summary4.3, aes(x = Proporcao, y = Temperatura_Classe,  fill = Ciclo.vida)) +
+  geom_bar(stat = "identity", position = "stack",alpha = 0.6) +  # Empilhamento padrão
+  labs(
+    y = "Temperatura (ºC)",
+    fill = "(g/h) Ciclo de vida") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("red3","gray60","gold" )) +  # Definir cores diferentes para os ciclos
+  
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text",x = 1, y = 6.2, label = "(g)",
+           fontface = "bold", size=5)
+g
+
+
+
+dados_summary4.4 <- dados_filtrados3 %>%
+  group_by(Salinidade_Classe, Ciclo.vida) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Salinidade_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+h<-ggplot(dados_summary4.4, aes(x = Proporcao, y = Salinidade_Classe,  fill = Ciclo.vida)) +
+  geom_bar(stat = "identity", position = "stack",alpha = 0.6) +  # Empilhamento padrão
+  labs(
+    y = "Salinidade (ppm)",
+    fill = "(g/h) Ciclo de vida") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("red3","gray60","gold" )) +  # Definir cores diferentes para os ciclos
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text", x = 1, y = 3.4, label = "(h)",
+           fontface = "bold", size=5)
+h 
+
+#reproducao 📌------
+colnames(dados_filtrados3)
+
+dados_summary4.5 <- dados_filtrados3 %>%
+  filter(!(Reprodução %in% c("Medusa", "Medusoide"))) %>%
+  group_by(Temperatura_Classe, Reprodução) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Temperatura_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+i<-ggplot(dados_summary4.5, aes(x = Proporcao, y = Temperatura_Classe,  fill = Reprodução)) +
+  geom_bar(stat = "identity", position = "stack",alpha = 0.6) +  # Empilhamento padrão
+  labs(
+    y = "Temperatura (ºC)",
+    fill = "(i/j) Reprodução") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("red3","gold","green3","black","purple" )) +  # Definir cores diferentes para os ciclos
+  
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text",x = 1, y = 6.2, label = "(i)",
+           fontface = "bold", size=5)
+i
+
+
+
+dados_summary4.6 <- dados_filtrados3 %>%
+  filter(!(Reprodução %in% c("Medusa", "Medusoide"))) %>%
+  group_by(Salinidade_Classe, Reprodução) %>%
+  summarise(Contagem = n(), .groups = "drop") %>%
+  group_by(Salinidade_Classe) %>%
+  mutate(Proporcao = Contagem / sum(Contagem) * 100)
+
+j<-ggplot(dados_summary4.6, aes(x = Proporcao, y = Salinidade_Classe,  fill = Reprodução)) +
+  geom_bar(stat = "identity", position = "stack",alpha = 0.6) +  # Empilhamento padrão
+  labs(
+    y = "Salinidade (ppm)",
+    fill = "(i/j) Reprodução") +
+  theme(
+    axis.title.x = element_blank(), #retira o label para nao ficar repetitivo
+    axis.title.y = element_blank(), #retira o label para nao ficar repetitivo
+    
+    panel.grid = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white"),  # fundo branco
+    # Adicionar um retângulo branco atrás do "(a)"
+    legend.position = "right",  # legenda horizontal embaixo
+    plot.background = element_rect(fill = "white")    # fundo do plot branco
+  ) +
+  scale_fill_manual(values = c("red3","gold","green3","black","purple" )) +  # Definir cores diferentes para os ciclos
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotaciona os rótulos do eixo X
+  annotate("text", x = 1, y = 3.4, label = "(j)",
+           fontface = "bold", size=5)
+j 
+
+# plot final 📌 -----
+p<-(a+b)/(c+d)/ (e+f)/(g+h)/(i+j)+ 
+  plot_layout(guides = "collect") +
+  plot_annotation(theme = theme(legend.position = "right"))
+
+ggsave("C:/Users/Andreza/Documents/GitHub/ATRIBUTOS/PosDefesa/quadro1_distribuicao_relativa.png", plot = p, width = 901/100, height = 1000/100, dpi = 300, units = "in")
+
