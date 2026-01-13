@@ -285,19 +285,19 @@ plot_atributo <- function(df, nome_atributo, titulo) {
 library(patchwork)
 
 #figura do exoesqueleto-----
-a<-plot_atributo(dados_long, "BasArrSte","Basal arrangement of stem")+
+a<-plot_atributo(dados_long, "BasArrSte","Arranjamento basal do hidrocaule")+
   annotate("text",x = -Inf, y = Inf, label = "(a)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
-b<-plot_atributo(dados_long, "TypGro", "Types of growth")+
+b<-plot_atributo(dados_long, "TypGro", "Tipo de crescimento")+
   annotate("text",x = -Inf, y = Inf, label = "(b)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
 
-c<-plot_atributo(dados_long, "BraTyp", "Branching types")+
+c<-plot_atributo(dados_long, "BraTyp", "Tipo de ramificação")+
   annotate("text",x = -Inf, y = Inf, label = "(c)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
 
 
-d<-plot_atributo(dados_long, "HydInsPat", "Hydrant insertion pattern")+
+d<-plot_atributo(dados_long, "HydInsPat", "Padrão de inserção do hidrante")+
   annotate("text",x = -Inf, y = Inf, label = "(d)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
 
@@ -309,17 +309,18 @@ ggsave("Plots/Defesa/distribuicao_relativa_perissarco.png",
 
 
 #figura da hidroteca e nemato----
-e<-plot_atributo(dados_long, "InsHyd", "Insertion of hydranth")+
+e<-plot_atributo(dados_long, "InsHyd", "Inserção do hidrante")+
   annotate("text",x = -Inf, y = Inf, label = "(a)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
-f<-plot_atributo(dados_long, "RimThe", "Rim of theca")+
+
+f<-plot_atributo(dados_long, "RimThe", "Margem hidrotecal")+
   annotate("text",x = -Inf, y = Inf, label = "(b)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
 
-g<-plot_atributo(dados_long, "HydExo", "Hydranth exoskeleton")+
+g<-plot_atributo(dados_long, "HydExo", "Exoesqueleto no hidrante")+
   annotate("text",x = -Inf, y = Inf, label = "(c)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
-h<-plot_atributo(dados_long, "Nem","Nematophore")+
+h<-plot_atributo(dados_long, "Nem","Nematóforo")+
   annotate("text",x = -Inf, y = Inf, label = "(d)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
 
@@ -329,17 +330,17 @@ hidroteca_nemato<-(e+f)/(g+h)+
 ggsave("Plots/Defesa/distribuicao_relativa_hidroteca_nemato.png", 
        plot = hidroteca_nemato, width = 12, height = 8, units = "in")
 #figura da reprodução----
-i<-plot_atributo(dados_long, "GonPro","Gonophore protection")+
+i<-plot_atributo(dados_long, "GonPro","Proteção do gonóforo")+
   annotate("text",x = -Inf, y = Inf, label = "(a)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
-j<-plot_atributo(dados_long, "SexRep","Sexual reproduction")+
+j<-plot_atributo(dados_long, "SexRep","Reprodução")+
   annotate("text",x = -Inf, y = Inf, label = "(b)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
 
-k<-plot_atributo(dados_long, "MedLifCyc", "Medusa or medusoid in the life cycle")+
+k<-plot_atributo(dados_long, "MedLifCyc", "Medusa ou medusoide no ciclo de vida")+
   annotate("text",x = -Inf, y = Inf, label = "(c)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
-l<-plot_atributo(dados_long, "Col","Coloniality")+
+l<-plot_atributo(dados_long, "Col","Colonialismo")+
   annotate("text",x = -Inf, y = Inf, label = "(d)", hjust = -0.3,
            vjust = 1.3,size = 5, fontface = "bold")
 
@@ -348,7 +349,7 @@ l<-plot_atributo(dados_long, "Col","Coloniality")+
 p2<-(i+j)/(k+l)+ 
   plot_layout(guides = "collect")
 p2
-ggsave("Plots/distribuicao_relativa_reproducao.png", 
+ggsave("Plots/Defesa/distribuicao_relativa_reproducao.png", 
        plot = p2, width = 12, height = 8, units = "in")
 
 # plotando tudo junto ----
