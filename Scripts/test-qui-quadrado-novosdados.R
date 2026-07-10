@@ -226,7 +226,7 @@ df_countf <- new.data %>%
 
 
 
-# 2) Matriz: linhas = gêneros (epibiontes), colunas = famílias (basibiontes)
+# 2) Matriz: linhas = familia (epibiontes), colunas = famílias (basibiontes)
 mat_widef <- df_countf %>%
   pivot_wider(
     id_cols     = Family_EP,
@@ -263,14 +263,59 @@ resf$p.value
 # X-squared = 4424.9, df = NA, p-value = 0.0023
 
 
-#teste de qui-quadrado-----
+#teste de qui-quadrado - entre familias-----
 resf <- chisq.test(mat_numf)
-chi_simf <- chisq.test(mat_numf, simulate.p.value = TRUE, B = 9999)
+chi_simf <- chisq.test(mat_numf, simulate.p.value = TRUE, B = 10000)
 
 chi_simf$p.value
 #resultado
-#X-squared = 2448.1, df = NA, p-value = 0.0027
+#X-squared = 2448.1, df = NA, p-value = 0.0032
+
 
 obsf <- chi_simf$observed
 expf <- chi_simf$expected
 stdf <- chi_simf$stdres
+
+# teste de qui-quadrado entre generos -----
+
+# teste de qui -quadrado entre generos de epi e basi
+
+colnames(new.data)
+
+
+df_count_g <- new.data %>%
+  transmute(
+    Genus_BS  = as.character(Genus_BS),
+    Genus_EP = as.character(Genus_EP)
+  ) %>%
+  filter(
+    !is.na(Genus_EP),
+    !is.na(Genus_BS)
+  ) %>%
+  count(Genus_EP, Genus_BS, name = "n")
+
+
+
+# 2) Matriz: linhas = familia (epibiontes), colunas = famílias (basibiontes)
+mat_wideg <- df_count_g %>%
+  pivot_wider(
+    id_cols     = Genus_EP,
+    names_from  = Genus_BS,
+    values_from = n,
+    values_fill = list(n = 0)
+  )
+
+
+
+# 3) Converter pra matrix numérica, com rownames = gêneros
+mat_numg <- mat_wideg %>%
+  tibble::column_to_rownames("Genus_EP") %>%
+  as.matrix()
+# opcional: garantir numeric mesmo
+storage.mode(mat_numg) <- "numeric"
+
+
+
+resg <-chisq.test(mat_numg, simulate.p.value = TRUE, B = 10000)
+resg$p.value
+#X-squared = 9965.4, df = NA, p-value = 0.0039

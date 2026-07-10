@@ -1,0 +1,27 @@
+{
+    "id": "6D02604D",
+    "path": "E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises/Scripts/rede_bipartida_recorte_17.6.26.R",
+    "project_path": "Scripts/rede_bipartida_recorte_17.6.26.R",
+    "type": "r_source",
+    "hash": "2717217906",
+    "contents": "",
+    "dirty": false,
+    "created": 1781697043840.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "tempName": "Untitled3",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "319,0",
+        "scrollLine": "295"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1782995648,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1782995648381,
+    "read_only": false,
+    "read_only_alternatives": []
+}
