@@ -44,7 +44,7 @@ familias_base_spp <- df1 %>%
 
 
 
-# --- 1) Padroniza nomes e junta (união de famílias) ---✔️
+# ----- 1) Padroniza nomes e junta (união de famílias) ---✔️----
 
 
 df <- full_join(familias_base_spp, familias_epi_spp, by = "family") %>%
@@ -705,3 +705,41 @@ ggraph(g, layout = "fr") +
   ) +
   theme_void() +
   labs(title = "Rede: Espécies epibiontes × Famílias de basibiontes")
+
+
+# upset plot graph - 2026/07/10 -----
+dados_upset_fam <- full_join(
+  familias_epi_spp,
+  familias_base_spp,
+  by = "family"
+) %>%
+  mutate(
+    n_epi = replace_na(n_epi, 0),
+    n_base = replace_na(n_base, 0),
+    
+    Epibiontes = n_epi > 0,
+    Basibiontes = n_base > 0
+  )
+
+install.packages(ComplexUpset)
+library(ComplexUpset)
+library(ggplot2)
+
+dados_upset <- dados_upset %>%
+  mutate(
+    categoria = case_when(
+      Epibiontes & Basibiontes ~ "Epibiontes e basibiontes",
+      Epibiontes & !Basibiontes ~ "Somente epibiontes",
+      !Epibiontes & Basibiontes ~ "Somente basibiontes"
+    )
+  )
+ComplexUpset::upset(
+  dados_upset_fam,
+  intersect = c("Epibiontes", "Basibiontes"),
+  name = "Papel ecológico"
+)
+library(grid)
+library(UpSetR)
+theme(
+  axis.ticks.length = unit(2, "mm")
+)
