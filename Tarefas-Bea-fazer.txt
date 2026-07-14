@@ -1,0 +1,8 @@
+2026.07.14
+refazer espécies compartilhadas entre famílias, gêneros e espécies
+tree heat map plot - refazer
+refazer gráfico de rede bipartida
+refazer em ingles os gráficos
+
+2026.07.13
+Diagrama de Euler - em pt - com spp, gen e fam

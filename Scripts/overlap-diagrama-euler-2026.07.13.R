@@ -22,6 +22,7 @@ library(treemapify)
 library(patchwork)
 library(RColorBrewer)
 library(gridExtra)
+library(eulerr)
 install.packages("gridExtra")
 
 dados<- readxl::read_xlsx("Data/Database_epizoism_hydroids_BEA_2026.07.13.xlsx")#✔️
@@ -114,7 +115,7 @@ criar_euler <- function(dataset,
     
     legend = list(
       side = "bottom",
-      labels = c("Epibiontes", "Basibiontes"),
+      labels = c("Epibionts", "Basibionts"),
       fontsize = 11,
       symbol_size = 0.8
     ),
@@ -143,7 +144,7 @@ criar_euler <- function(dataset,
     dataset = dados,
     coluna_ep = "nome_ep",
     coluna_bs = "nome_basi",
-    titulo = "Espécies"
+    titulo = "Species"
   )
   
   
@@ -151,7 +152,7 @@ criar_euler <- function(dataset,
     dataset = dados,
     coluna_ep = "genero_ep",
     coluna_bs = "genero_basi",
-    titulo = "Gêneros"
+    titulo = "Genus"
   )
   
   
@@ -159,7 +160,7 @@ criar_euler <- function(dataset,
     dataset = dados,
     coluna_ep = "familia_ep",
     coluna_bs = "familia_basi",
-    titulo = "Famílias"
+    titulo = "Family"
   ) 
   
   figura_horizontal <- gridExtra::arrangeGrob(
@@ -183,7 +184,7 @@ criar_euler <- function(dataset,
     respect = TRUE,
     
     top = grid::textGrob(
-      "Sobreposição taxonômica entre epibiontes e basibiontes",
+      "Taxonomic overlap between epibionts and basibionts",
       gp = grid::gpar(
         fontsize = 18,
         fontface = "bold"
@@ -197,7 +198,7 @@ criar_euler <- function(dataset,
   
 # salvando ---- 
   png(
-    filename = "Plots/Euler_overlap_horizontal.png",
+    filename = "Plots/Euler_overlap_horizontal_eng.png",
     width = 5500,
     height = 2000,
     res = 300,
@@ -207,4 +208,168 @@ criar_euler <- function(dataset,
   grid::grid.draw(figura_horizontal)
   
   dev.off()
+# overlap de espécies ------
   
+  # Overlap de espécies
+  overlap_especies <- intersect(
+    limpar_taxons(dados$nome_ep),
+    limpar_taxons(dados$nome_basi)
+  ) |>
+    sort()
+  
+  
+  # Overlap de gêneros
+  overlap_generos <- intersect(
+    limpar_taxons(dados$genero_ep),
+    limpar_taxons(dados$genero_basi)
+  ) |>
+    sort()
+  
+  
+  # Overlap de famílias
+  overlap_familias <- intersect(
+    limpar_taxons(dados$familia_ep),
+    limpar_taxons(dados$familia_basi)
+  ) |>
+    sort()
+  
+  
+  print(overlap_especies)
+  
+  overlap_generos
+  overlap_familias
+  
+  resumo_overlap <- data.frame(
+    Nivel_taxonomico = c("Espécies", "Gêneros", "Famílias"),
+    Numero_compartilhado = c(
+      length(overlap_especies),
+      length(overlap_generos),
+      length(overlap_familias)
+    )
+  )
+  
+  resumo_overlap
+
+  
+  # resumo geral----
+  
+  
+  # Espécies
+  especies_ep <- limpar_taxons(dados$nome_ep)
+  especies_bs <- limpar_taxons(dados$nome_basi)
+  
+  # Gêneros
+  generos_ep <- limpar_taxons(dados$genero_ep)
+  generos_bs <- limpar_taxons(dados$genero_basi)
+  
+  # Famílias
+  familias_ep <- limpar_taxons(dados$familia_ep)
+  familias_bs <- limpar_taxons(dados$familia_basi)
+  
+  
+  resumo_geral <- data.frame(
+    
+    Nivel_taxonomico = c(
+      "Espécies",
+      "Gêneros",
+      "Famílias"
+    ),
+    
+    Total_epibiontes = c(
+      length(especies_ep),
+      length(generos_ep),
+      length(familias_ep)
+    ),
+    
+    Total_basibiontes = c(
+      length(especies_bs),
+      length(generos_bs),
+      length(familias_bs)
+    ),
+    
+    Compartilhados = c(
+      length(overlap_especies),
+      length(overlap_generos),
+      length(overlap_familias)
+    ),
+    
+    Exclusivos_epibiontes = c(
+      length(setdiff(especies_ep, especies_bs)),
+      length(setdiff(generos_ep, generos_bs)),
+      length(setdiff(familias_ep, familias_bs))
+    ),
+    
+    Exclusivos_basibiontes = c(
+      length(setdiff(especies_bs, especies_ep)),
+      length(setdiff(generos_bs, generos_ep)),
+      length(setdiff(familias_bs, familias_ep))
+    )
+  )
+  
+  resumo_geral
+  
+  
+# spp, gen e fam sem overlap----
+  
+  # Espécies exclusivas
+  especies_exclusivas_ep <- setdiff(especies_ep, especies_bs)
+  especies_exclusivas_bs <- setdiff(especies_bs, especies_ep)
+  
+  # Gêneros exclusivos
+  generos_exclusivos_ep <- setdiff(generos_ep, generos_bs)
+  generos_exclusivos_bs <- setdiff(generos_bs, generos_ep)
+  
+  # Famílias exclusivas
+  familias_exclusivas_ep <- setdiff(familias_ep, familias_bs)
+  familias_exclusivas_bs <- setdiff(familias_bs, familias_ep)
+  # salvando ----
+  dir.create(
+    "Resultados",
+    showWarnings = FALSE,
+    recursive = TRUE
+  )
+  
+  writexl::write_xlsx(
+    list(
+      
+      Resumo = resumo_geral,
+      
+      Especies_compartilhadas = data.frame(
+        Especie = sort(overlap_especies)
+      ),
+      
+      Especies_exclusivas_EP = data.frame(
+        Especie = sort(especies_exclusivas_ep)
+      ),
+      
+      Especies_exclusivas_BS = data.frame(
+        Especie = sort(especies_exclusivas_bs)
+      ),
+      
+      Generos_compartilhados = data.frame(
+        Genero = sort(overlap_generos)
+      ),
+      
+      Generos_exclusivos_EP = data.frame(
+        Genero = sort(generos_exclusivos_ep)
+      ),
+      
+      Generos_exclusivos_BS = data.frame(
+        Genero = sort(generos_exclusivos_bs)
+      ),
+      
+      Familias_compartilhadas = data.frame(
+        Familia = sort(overlap_familias)
+      ),
+      
+      Familias_exclusivas_EP = data.frame(
+        Familia = sort(familias_exclusivas_ep)
+      ),
+      
+      Familias_exclusivas_BS = data.frame(
+        Familia = sort(familias_exclusivas_bs)
+      )
+    ),
+    
+    path = "Resultados/overlap_taxonomico.xlsx"
+  )
