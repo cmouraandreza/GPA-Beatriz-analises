@@ -17,6 +17,8 @@ library(bipartite)
 library(readxl)
 library(tibble)
 
+#2026.07.21 
+# tem que fazer outra estração de dados
 
 # subir os dados
 exemplo<- readxl::read_xlsx("Data/matriz-bipartida-gen-fam.xlsx")

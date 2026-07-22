@@ -23,7 +23,7 @@ library(patchwork)
 library(RColorBrewer)
 library(gridExtra)
 library(eulerr)
-install.packages("gridExtra")
+#install.packages("gridExtra")
 
 dados<- readxl::read_xlsx("Data/Database_epizoism_hydroids_BEA_2026.07.13.xlsx")#✔️
 colnames(dados)
@@ -95,19 +95,19 @@ criar_euler <- function(dataset,
       Basibiontes = basibiontes
     ),
     shape = "circle",
-    loss = "square"
+    loss = "sum_squared"
   )
   
   grafico <- plot(
     ajuste,
     
     fills = list(
-      fill = c("#f2a65a", "#335c67"),
-      alpha = 0.30
+      fill = c("#DBA588", "#C2CED2"),
+      alpha = 0.50
     ),
     
     edges = list(
-      col = c("#b08968", "#0b3954"),
+      col = c("#CB997E", "#0B3954"),
       lwd = 3
     ),
     
@@ -116,21 +116,21 @@ criar_euler <- function(dataset,
     legend = list(
       side = "bottom",
       labels = c("Epibionts", "Basibionts"),
-      fontsize = 11,
+      fontsize = 12,
       symbol_size = 0.8
     ),
     
     quantities = list(
       type = c("counts", "percent"),
       template = "{counts}\n({percent})",
-      fontsize = 13,
+      fontsize = 14,
       font = 2
     ),
     
     main = list(
       label = titulo,
       gp = grid::gpar(
-        fontsize = 17,
+        fontsize = 18,
         fontface = "bold"
       )
     )
@@ -144,7 +144,7 @@ criar_euler <- function(dataset,
     dataset = dados,
     coluna_ep = "nome_ep",
     coluna_bs = "nome_basi",
-    titulo = "Species"
+    titulo = "(a) Species"
   )
   
   
@@ -152,7 +152,7 @@ criar_euler <- function(dataset,
     dataset = dados,
     coluna_ep = "genero_ep",
     coluna_bs = "genero_basi",
-    titulo = "Genus"
+    titulo = "(b) Genus"
   )
   
   
@@ -160,7 +160,7 @@ criar_euler <- function(dataset,
     dataset = dados,
     coluna_ep = "familia_ep",
     coluna_bs = "familia_basi",
-    titulo = "Family"
+    titulo = "(c) Family"
   ) 
   
   figura_horizontal <- gridExtra::arrangeGrob(
@@ -198,7 +198,7 @@ criar_euler <- function(dataset,
   
 # salvando ---- 
   png(
-    filename = "Plots/Euler_overlap_horizontal_eng.png",
+    filename = "Plots/Euler_overlap_horizontal_eng.2.png",
     width = 5500,
     height = 2000,
     res = 300,

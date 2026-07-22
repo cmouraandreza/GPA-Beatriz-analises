@@ -29,7 +29,7 @@ df1<- readxl::read_xlsx("Data/analise-bea-espec-selecionadas.xlsx")
 colnames(df1)
 # vamos fazer uma tabela dessa de presença com o df1
 tabela<-df1 %>%
-  select(espc_epi, spec_basi) %>%
+  dplyr::select(espc_epi, spec_basi) %>%
   distinct() %>%   # remove duplicatas
   mutate(presenca = 1) %>%
   pivot_wider(
@@ -65,7 +65,7 @@ colnames(df1)
 
 # vamos fazer uma tabela dessa de presença com o df1
 tabela2<-df1 %>%
-  select(espc_epi, gen_basi) %>%
+  dplyr::select(espc_epi, gen_basi) %>%
   distinct() %>%   # remove duplicatas
   mutate(presenca = 1) %>%
   pivot_wider(
@@ -102,7 +102,7 @@ colnames(df1)
 
 # vamos fazer uma tabela dessa de presença com o df1
 tabela3<-df1 %>%
-  select(espc_epi, fam_basi) %>%
+  dplyr::select(espc_epi, fam_basi) %>%
   distinct() %>%   # remove duplicatas
   mutate(presenca = 1) %>%
   pivot_wider(
