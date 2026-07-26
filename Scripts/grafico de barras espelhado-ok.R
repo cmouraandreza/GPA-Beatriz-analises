@@ -18,29 +18,29 @@ library(devtools)
 library(vegan)
 library(dplyr)
 
-df1<- readxl::read_xlsx("Data/COPIA-Database_epizoism_hydroids-bea.xlsx")
+df<- readxl::read_xlsx("Data/Database_epizoism_hydroids_BEA_2026.07.13.xlsx")
 
 colnames(df)
 
-EP-family
-EP-Genera
-Genera-BS
-Family-BS
+familia_ep
+genero_ep
+
+genero_basi
+familia_basi
 
 
-
-familias_epi <- df1 %>%
-  count(EP_family, name = "frequencia") %>%   # conta por família
+familias_epi <- df %>%
+  count(familia_ep, name = "frequencia") %>%   # conta por família
   arrange(desc(frequencia))     
-familias_base <- df1 %>%
-  count(BS_Family, name = "frequencia") %>%   # conta por família
+familias_base <- df %>%
+  count(familia_basi, name = "frequencia") %>%   # conta por família
   arrange(desc(frequencia))
 
-generos_epi <- df1 %>%
-  count(EP_Genera, name = "frequencia") %>%   # conta por genero
+generos_epi <- df %>%
+  count(genero_ep, name = "frequencia") %>%   # conta por genero
   arrange(desc(frequencia))
-generos_base <- df1 %>%
-  count(BS_Genera, name = "frequencia") %>%   # conta por genero
+generos_base <- df %>%
+  count(genero_basi, name = "frequencia") %>%   # conta por genero
   arrange(desc(frequencia))
 
 
@@ -58,9 +58,9 @@ library(scales)
 #   familias_base: colunas  BS_Family                  + frequencia
 
 epi  <- familias_epi  %>%
-  rename(family = EP_family, n_epi = frequencia)  # se já for EP_family, use rename(family = EP_family)
+  rename(family = familia_ep, n_epi = frequencia)  # se já for EP_family, use rename(family = EP_family)
 base <- familias_base %>%
-  rename(family = BS_Family,  n_base = frequencia)
+  rename(family = familia_basi,  n_base = frequencia)
 
 df <- full_join(epi, base, by = "family") %>%
   mutate(across(c(n_epi, n_base), ~replace_na(.x, 0)))
@@ -74,8 +74,23 @@ df <- df %>%
 df_long <- df %>%
   pivot_longer(c(n_epi, n_base), names_to = "grupo", values_to = "n") %>%
   mutate(
-    grupo = recode(grupo, n_epi = "Epibiontes", n_base = "Basebiontes"),
-    n = if_else(grupo == "Basebiontes", -n, n)
+    grupo = recode(grupo, n_epi = "Epibionts", n_base = "Basibionts"),
+    n = if_else(grupo == "Basibionts", -n, n)
+  )
+
+df_long <- df_long %>%
+  group_by(family) %>%
+  mutate(
+    total_registros = sum(abs(n), na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  filter(total_registros > 15) %>%
+  mutate(
+    family = fct_reorder(
+      family,
+      total_registros,
+      .desc = FALSE
+    )
   )
 
 df_long <- df_long %>%
@@ -86,7 +101,7 @@ df_long <- df_long %>%
   ) %>%
   ungroup()
 
-writexl::write_xlsx(df, "data/famílias_frequencias.xlsx")
+#writexl::write_xlsx(df, "data/famílias_frequencias.xlsx")
 
 
 
@@ -119,94 +134,6 @@ labs_right <- df_long %>%
 
 
 
-
-p <- ggplot(df_long, aes(x = family, y = n)) +
-  geom_col(aes(fill = grupo), 
-           width = 0.75, color = "white", linewidth = 0.2) +
-  
-  # valores (opcional)
-  
-  
-  geom_text(
-     data = subset(df_long, n > 0 & n != 1),  # exclui valor 1
-    inherit.aes = FALSE,
-    aes(
-      x = family,
-      y = n / 2,  # posição no meio da barra positiva
-      label = scales::comma(n)
-    ),
-    hjust = 0.5,      # centraliza o texto horizontalmente
-    vjust = 0.5,      # centraliza verticalmente
-    size = 4.2,
-    color = "white",
-    fontface = "bold" 
-  ) +
-  
-  
-  geom_text(
-    data = subset(df_long, n < 0 & abs(n) != 1),  # exclui -1 e +1
-    inherit.aes = FALSE,
-    aes(
-      x = family,
-      y = n / 2,  # Posição no meio da barra negativa
-      label = scales::comma(abs(n))
-    ),
-    hjust = 0.5,    # Centralizado horizontalmente
-    vjust = 0.5,    # Centralizado verticalmente
-    size = 4.2,
-    color = "white",
-    fontface = "bold"  # Cor clara pra destacar dentro da barra
-  )+
-  
-
-  
-  # 👉 nome só do lado direito
-  
-  
-  geom_text(data = labs_right, inherit.aes = FALSE,
-            aes(x = family, y = y_pos, label = family, hjust = hjust),
-            vjust = .2, size = 3.8, fontface = "bold", color = "gray10") +
-  
-  
-  scale_y_continuous(labels = function(v) scales::comma(abs(v))) +
-  scale_fill_manual(values = c("Epibiontes"="darkblue","Basebiontes"="darkorange"), name=NULL) +
-  coord_flip(clip = "off") +
- 
- #theme_minimal(base_size = 12) +
-  labs(y = "Species number", x = "Family", fill = "Regions", color = "Regions") +
-  theme_minimal()+
-  theme(
-    panel.grid.major.x = element_blank(),
-        axis.text.y = element_blank(), axis.title.y = element_blank(),
-        
-
-
-        
-        plot.margin = margin(10, 40, 10, 40),
-        legend.position = "bottom",            # corrigido
-        legend.direction = "horizontal")
-p
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 library(ggplot2)
 
 g <- ggplot(df_long, aes(x = family, y = percentual)) +
@@ -223,7 +150,7 @@ geom_text(
     label = paste0(n, " (", round(percentual, 1), "%)")
   ),
   hjust = 0.5, vjust = 0.5,
-  size = 4.2, color = "white", fontface = "bold"
+  size = 4.2, color = "gray10", fontface = "bold"
 )+
   
   # --------- RÓTULOS DENTRO DAS BARRAS (negativas) ---------
@@ -236,7 +163,7 @@ geom_text(
     label = paste0(abs(n), " (", round(abs(percentual), 1), "%)")
   ),
   hjust = 0.5, vjust = 0.5,
-  size = 4.2, color = "white", fontface = "bold"
+  size = 4.2, color = "gray10", fontface = "bold"
 )+
   
   
@@ -257,15 +184,20 @@ geom_text(
   # eixo em porcentagem (mostrando sempre valor positivo no rótulo)
   scale_y_continuous(labels = function(v) paste0(abs(v), "%")) +
   
-  scale_fill_manual(values = c("Epibiontes"="darkblue","Basebiontes"="darkorange"), name=NULL) +
+  scale_fill_manual(values = c("Epibiontes"="#eecfc4",
+                               "Basebiontes"="#c0d8d8"), name=NULL) +
   coord_flip(clip = "off") +
   
-  labs(y = "porcentagem (%)", x = "Family", fill = "Regions", color = "Regions") +
+  labs(y = "porcentagem (%)", x = "Family",
+       fill = "Regions", color = "Regions") +
   theme_minimal() +
   theme(
     panel.grid.major.x = element_blank(),
-    axis.text.y = element_blank(), axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.title.y = element_blank(),
+    
     plot.margin = margin(10, 40, 10, 40),
+    
     legend.position = "bottom",
     legend.direction = "horizontal"
   )
@@ -276,3 +208,122 @@ ggsave("Plots/espelhado.png",
        plot = g, width = 14, height = 8, dpi = 600, units = "in")
 
 
+#===============================================================================
+
+#teste com as barras deitadas
+library(dplyr)
+library(forcats)
+library(ggplot2)
+library(scales)
+
+# ------------------------------------------------------------
+# DADOS PARA O GRÁFICO
+# ------------------------------------------------------------
+
+df_empilhado <- df_long %>%
+  mutate(
+    # Remove o sinal negativo que havia sido usado no gráfico divergente
+    n = abs(n)
+  ) %>%
+  
+  # Soma epi + basi dentro de cada família
+  group_by(family) %>%
+  mutate(
+    total_registros = sum(n, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  
+  # Mantém somente famílias com mais de 15 registros
+  filter(total_registros > 15) %>%
+  
+  # Calcula a porcentagem dentro de cada família
+  group_by(family) %>%
+  mutate(
+    percentual_familia = 100 * n / sum(n, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  
+  # Ordena as famílias pelo número total de registros
+  mutate(
+    family = fct_reorder(
+      family,
+      total_registros,
+      .desc = TRUE
+    )
+  )
+
+
+# ------------------------------------------------------------
+# GRÁFICO DE BARRAS EMPILHADAS A 100%
+# ------------------------------------------------------------
+
+g_empilhado <- ggplot(
+  df_empilhado,
+  aes(
+    x = family,
+    y = percentual_familia,
+    fill = grupo
+  )
+) +
+  
+  geom_col(
+    width = 0.75,
+   #color = "white",
+    linewidth = 0.35
+  ) +
+  
+  geom_text(
+    aes(
+      label = ifelse(
+        percentual_familia >= 5,
+        paste0(
+          n,
+          " (",
+          round(percentual_familia, 1),
+          "%)"
+        ),   ""  )
+    ),
+    position = position_stack(vjust = 0.5),
+    angle = 0,
+    color = "gray12",
+    fontface = "bold",
+    size = 3.6
+  ) +
+  coord_flip() +
+  
+  scale_y_continuous(
+    labels = label_percent(scale = 1),
+    breaks = seq(0, 100, 25),
+    expand = expansion(mult = c(0, 0.01))) +
+  
+  scale_fill_manual(
+    values = c(
+      "Epibionts" = "#eecfc4",
+      "Basibionts" = "#C2CED2"
+    )
+  ) +
+  scale_colour_manual(
+    values = c( "#CB997E", "#0B3954"
+    )
+  ) +
+  
+  labs(
+    x = "Family",
+    y = "Relative frequency within family (%)" ) +
+  
+  theme_minimal(base_size = 13) +
+  
+  theme(  panel.grid.major.x = element_blank(),
+          panel.grid.minor = element_blank(),
+    
+    axis.text.x = element_text(
+      hjust = 1,
+      size = 10  ),
+    
+    axis.title = element_text(
+      face = "bold" ),
+    
+    legend.position = "bottom",
+    legend.direction = "horizontal")
+
+g_empilhado
