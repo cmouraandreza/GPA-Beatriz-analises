@@ -4,7 +4,7 @@
 
 #1.10.2025
 # obs. 6.01 - não precisa fazer com os novos dados ok
-
+save.image(file = "grafico_barras_enviroment.RData")
 setwd("E:/GitHub/GPA-Beatriz/GPA-Beatriz-analises")
 getwd()
 
@@ -209,8 +209,10 @@ ggsave("Plots/espelhado.png",
 
 
 #===============================================================================
-
 #teste com as barras deitadas
+#2026.07.30
+
+#===============================================================================
 library(dplyr)
 library(forcats)
 library(ggplot2)
@@ -256,74 +258,295 @@ df_empilhado <- df_long %>%
 # ------------------------------------------------------------
 # GRÁFICO DE BARRAS EMPILHADAS A 100%
 # ------------------------------------------------------------
+ordem_familias<-c(
+  "Bougainvilliidae",
+  "Eudendriidae",
+  "Pennariidae",
+  "Campanulariidae",
+  "Campanulinidae",
+  "Lafoeidae",
+  "Haleciidae",
+  "Halopterididae",
+  "Hebellidae",
 
-g_empilhado <- ggplot(
-  df_empilhado,
+  "Aglaopheniidae",
+  "Plumulariidae",
+  "Sertularellidae",
+  "Sertulariidae",
+  "Syntheciidae",
+  "Symplectoscyphidae",
+  "Tiarannidae",
+  "Thyroscyphidae",
+  "Tubulariidae",
+  "Zygophylacidae"
+  
+)
+
+df_empilhado_familia <- df_empilhado %>%
+  dplyr::mutate(
+    family = factor(
+      family,
+      levels = rev(ordem_familias)
+    )
+  )
+
+# ver se tem diferenca entre os df
+setdiff(
+  unique(as.character(df_empilhado$family)),
+  ordem_familias
+)
+
+#=======
+#plot
+
+g_empilhado_familias <- ggplot(
+  df_empilhado_familia,
   aes(
     x = family,
     y = percentual_familia,
-    fill = grupo
-  )
-) +
+    fill = grupo )) +
   
   geom_col(
-    width = 0.75,
-   #color = "white",
-    linewidth = 0.35
-  ) +
+    width = 0.75,color = "white",linewidth = 0.35 ) +
   
   geom_text(
-    aes(
-      label = ifelse(
-        percentual_familia >= 5,
-        paste0(
-          n,
+    aes(label = ifelse( percentual_familia >= 5, paste0(n,
           " (",
           round(percentual_familia, 1),
-          "%)"
-        ),   ""  )
-    ),
+          "%)"),   ""  )),
     position = position_stack(vjust = 0.5),
     angle = 0,
     color = "gray12",
     fontface = "bold",
-    size = 3.6
-  ) +
-  coord_flip() +
-  
-  scale_y_continuous(
+    size = 3.4) +
+ 
+   coord_flip() +
+ 
+   scale_y_continuous(
     labels = label_percent(scale = 1),
-    breaks = seq(0, 100, 25),
+    breaks = seq(0, 100, 20),
     expand = expansion(mult = c(0, 0.01))) +
-  
-  scale_fill_manual(
+    scale_fill_manual(
     values = c(
-      "Epibionts" = "#eecfc4",
-      "Basibionts" = "#C2CED2"
-    )
-  ) +
-  scale_colour_manual(
-    values = c( "#CB997E", "#0B3954"
-    )
-  ) +
+      "Epibionts" = "#f7e6da",
+      "Basibionts" = "#adcfe0")) +
   
   labs(
-    x = "Family",
+    x = "Families",
     y = "Relative frequency within family (%)" ) +
   
-  theme_minimal(base_size = 13) +
+  theme_minimal(base_size = 12) +
   
   theme(  panel.grid.major.x = element_blank(),
           panel.grid.minor = element_blank(),
     
-    axis.text.x = element_text(
-      hjust = 1,
-      size = 10  ),
+    axis.text.x = element_blank() ,
+    axis.title.x = element_blank() ,
     
-    axis.title = element_text(
-      face = "bold" ),
-    
-    legend.position = "bottom",
-    legend.direction = "horizontal")
+    legend.position = "right",
+    legend.direction = "vertical")+
+  labs(title = "(a) Relative distribution of families records between epibionts and basibionts")
 
-g_empilhado
+g_empilhado_familias
+
+
+
+ #==============================================================================
+#grafico de generos
+#==============================================================================
+
+df_long_generos <- df %>%
+  tidyr::pivot_longer(
+    cols = c(genero_ep, genero_basi),
+    names_to = "grupo",
+    values_to = "genus"  ) %>%
+  dplyr::filter(
+    !is.na(genus),
+    genus != ""  ) %>%
+  dplyr::mutate(
+    grupo = dplyr::recode(
+      grupo,
+      genero_ep = "Epibionts",
+      genero_basi = "Basibionts")  ) %>%
+  dplyr::count(
+    genus,
+    grupo,
+    name = "n"
+  ) %>%
+  tidyr::complete(
+    genus,
+    grupo = c("Epibionts", "Basibionts"),
+    fill = list(n = 0)) %>%
+  dplyr::group_by(genus) %>%
+  dplyr::mutate(total_registros = sum(n, na.rm = TRUE)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(total_registros > 20) %>%
+  dplyr::mutate(
+    n = dplyr::if_else(
+      grupo == "Basibionts",
+      -n,
+      n ),
+    genus = forcats::fct_reorder(
+      genus,
+      total_registros,
+      .desc = FALSE )) %>%
+  dplyr::group_by(grupo) %>%
+  dplyr::mutate(
+    total_abs = sum(abs(n), na.rm = TRUE),
+    percentual = 100 * n / total_abs
+  ) %>%
+  dplyr::ungroup()
+
+
+#=== empilhando ====
+df_empilhado_generos <- df_long_generos %>%
+  mutate(
+    # Remove o sinal negativo que havia sido usado no gráfico divergente
+    n = abs(n)
+  ) %>%
+  
+  # Soma epi + basi dentro de cada família
+  group_by(genus) %>%
+  mutate(
+    total_registros = sum(n, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  
+  # Mantém somente com mais de 15 registros
+  filter(total_registros > 30) %>%
+  
+  # Calcula a porcentagem dentro de cada família
+  group_by(genus) %>%
+  mutate(
+    percentual = 100 * n / sum(n, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  
+  mutate(
+    genus = fct_reorder(
+      genus,
+      total_registros,
+      .desc = TRUE
+    )
+  )
+
+#===
+#ordem dos geners
+
+ordem_generos <- c(
+  #Atecados
+  "Bimeria",
+  "Eudendrium",
+
+ #Campanulariidae
+  "Campanularia",
+   "Clytia",
+   "Obelia",
+  #Hebellidae
+  "Hebella",
+ #Lafoeidae
+  "Filellum",
+  #Haleciidae 
+ "Halecium",
+ 
+##plumularioidea
+   #Aglaopheniidae
+  "Aglaophenia",
+  "Lytocarpia",
+   #plumulariidae
+  "Antennella",
+  "Plumularia",
+  "Nemertesia",
+
+##Sertularioidea 
+ #Sertularellidae
+  "Sertularella",
+  #Sertulariidae
+  "Tridentata",
+  "Diphasia",
+
+  #Syntheciidae
+  "Synthecium",
+  
+  #Symplectoscyphidae
+  "Symplectoscyphus",
+ 
+  #Tiraniidae
+  "Modeeria",
+ 
+  #Thyroscyphidae
+  "Thyroscyphus",
+ 
+  #Tubulariidae
+   "Tubularia"
+)
+
+df_empilhado_generos <- df_empilhado_generos %>%
+  dplyr::mutate(
+    genus = factor(
+      genus,
+      levels = rev(ordem_generos)
+    )
+  )
+#==============================================================================
+#plot
+
+g_generos<- ggplot(
+  df_empilhado_generos,
+  aes(
+    x = genus,
+    y = percentual,
+    fill = grupo )) +
+  
+  geom_col(
+    width = 0.75,color = "white",linewidth = 0.35 ) +
+  
+  geom_text(
+    aes(label = ifelse( percentual >= 5, paste0(n,
+     " (",  round(percentual, 1), "%)"),   ""  )),
+    
+    position = position_stack(vjust = 0.5),
+    angle = 0,
+    color = "gray20",
+    fontface = "bold",
+    size = 3.4) +
+  
+  coord_flip() +
+  #escala mutada pelo axis - element_blank
+  scale_y_continuous(
+    labels = label_percent(scale = 1),
+    breaks = seq(0, 100, 20),
+    expand = expansion(mult = c(0, 0.01))) +
+  scale_fill_manual(
+    values = c(
+      "Epibionts" = "#f7e6da",
+      "Basibionts" = "#adcfe0")) +
+  
+  labs(
+    x = "Genus",
+    y = "Relative frequency within family (%)" ) +
+  
+  theme_minimal(base_size = 12) +
+  
+  theme(  panel.grid.major.x = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text.y = element_text(face = "italic"),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.x = element_blank(),
+          
+          legend.position = "right",
+          legend.direction = "vertical")+
+  labs(title = "(b) Relative distribution of genus records between epibionts and basibionts")
+
+g_generos
+
+library(patchwork)
+
+graficos<- g_empilhado_familias/g_generos +
+  plot_layout(guides = "collect")
+graficos
+
+ggsave("Plots/PosDefesa/distribuicao_relativa_gen_fam_2026.07.30.png", 
+       plot = graficos, width = 10, height = 12, units = "in")
+dev.off()
